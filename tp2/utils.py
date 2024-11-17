@@ -36,13 +36,16 @@ def store_frames(vid):
     print('Storing video frames...')
     count = 0
     success = 1
+    frame_paths = []
     while success:
         success, image = vid.read()
         count += 1
         if success:
-            cv2.imwrite(f'frames/frame-{count:03}.jpg', image)
+            file_path = f'frames/frame-{count:03}.jpg'
+            cv2.imwrite(file_path, image)
+            frame_paths.append(file_path)
     print('Frames stored successfully')
-
+    return frame_paths
 
 def read_video_and_store_frames(video_path):
     video = cv2.VideoCapture(video_path)
@@ -57,8 +60,8 @@ def read_video_and_store_frames(video_path):
         except Exception as e:
             print(f"An error occurred: {e}")
 
-    store_frames(video)
-    return fps
+    frame_paths = store_frames(video)
+    return fps, frame_paths
 
 def plot_metric(curr_metric):
     plt.plot(curr_metric)
@@ -74,11 +77,12 @@ def get_img_center(img):
     m, n = img.shape
     return m//2, n//2
 
-def get_centered_roi(img, area_percentage):
+def get_centered_roi(img, area_percentage, return_rect_dims=False):
     m, n = img.shape
     center_m, center_n = get_img_center(img)
     dm, dn = int(m*area_percentage)//2, int(n*area_percentage)//2
-    # print(dm,dn)
+    if return_rect_dims:
+        return dm, dn
     return img[center_m-dm:center_m+dm, center_n-dn:center_n+dn]
 
 def get_gray_img(img):
@@ -154,3 +158,8 @@ def draw_focus_matrix(frame_path, threshold, points, metric_fun):
     for start_point, end_point in points:
         cv2.rectangle(modified_img, start_point, end_point, green if total_calc > threshold else red, thickness=2)
     return modified_img
+
+def imshow_roi(frame, area_percent):
+    dm, dn = get_centered_roi(get_gray_img(cv2.imread(frame)), area_percent, return_rect_dims=True)
+    modif_img, points_roi_5 = get_focus_matrix(cv2.imread(frame), 1, 1, dn, dm)
+    plt.imshow(cv2.cvtColor(modif_img, cv2.COLOR_BGR2RGB))
