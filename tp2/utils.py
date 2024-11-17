@@ -95,8 +95,8 @@ def get_centered_roi(img, area_percentage, return_rect_dims=False):
 def get_gray_img(img):
     return cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
-def get_metric_for_centered_roi(frame, metric_func, area_percentage=0.05):
-    gray_img = get_gray_img(cv2.imread(frame))
+def get_metric_for_centered_roi(image, metric_func, area_percentage=0.05):
+    gray_img = get_gray_img(image)
     centered_roi = get_centered_roi(gray_img, area_percentage)
     return metric_func(centered_roi)
 
@@ -134,8 +134,13 @@ def get_delta_points(start,end):
     dy = y2-y1
     return x1,y1,dx,dy
 
-def group_metric(img, points, metric_func, group_func):
+def group_metric(frame_path, points, metric_func, group_func, preprocess_func = None):
     # we might want to group by min, max, mean
+    if preprocess_func is None:
+        img = cv2.imread(frame_path)
+    else:
+        img = preprocess_func(cv2.imread(frame_path))
+
     gray_img = get_gray_img(img)
     calculations = []
     for start_point, end_point in points:
@@ -155,13 +160,16 @@ def write_video(filename, rgb_frames, fps):
         output.write(bgr_im)
     output.release()
 
-def draw_focus_matrix(frame_path, threshold, points, metric_fun):
-    img = cv2.imread(frame_path)
+def draw_focus_matrix(frame_path, threshold, points, metric_fun, preprocess_func = None):
+    if preprocess_func is None:
+        img = cv2.imread(frame_path)
+    else:
+        img = preprocess_func(cv2.imread(frame_path))
     rgb_img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
     modified_img = rgb_img.copy()
     green = (0 , 255, 0)
     red = (255, 0, 0)
-    total_calc = group_metric(img, points, metric_fun, np.mean)
+    total_calc = group_metric(frame_path, points, metric_fun, np.mean)
     for start_point, end_point in points:
         cv2.rectangle(modified_img, start_point, end_point, green if total_calc > threshold else red, thickness=2)
     return modified_img
