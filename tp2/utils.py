@@ -63,12 +63,19 @@ def read_video_and_store_frames(video_path):
     frame_paths = store_frames(video)
     return fps, frame_paths
 
+def get_value_range(curr_metric):
+    return 0.6*(np.max(curr_metric) - np.min(curr_metric)) + np.min(curr_metric)
+
 def plot_metric(curr_metric):
     plt.plot(curr_metric)
     plt.ylabel('Image Sharpness Measure')
     plt.xlabel('# frame')
     absolute_max = np.max(curr_metric)
+    mean_value = np.mean(curr_metric)
+    value_range = get_value_range(curr_metric)
     plt.axhline(absolute_max, linestyle='dashed', color='orange', label=f'max: {absolute_max:0.4f}')
+    plt.axhline(value_range, linestyle='dashed', color='red', label=f'0.6*(value_range): {value_range:0.4f}')
+    plt.axhline(mean_value, linestyle='dashed', color='green', label=f'mean: {mean_value:0.4f}')
     plt.legend()
     return absolute_max
 
@@ -158,8 +165,3 @@ def draw_focus_matrix(frame_path, threshold, points, metric_fun):
     for start_point, end_point in points:
         cv2.rectangle(modified_img, start_point, end_point, green if total_calc > threshold else red, thickness=2)
     return modified_img
-
-def imshow_roi(frame, area_percent):
-    dm, dn = get_centered_roi(get_gray_img(cv2.imread(frame)), area_percent, return_rect_dims=True)
-    modif_img, points_roi_5 = get_focus_matrix(cv2.imread(frame), 1, 1, dn, dm)
-    plt.imshow(cv2.cvtColor(modif_img, cv2.COLOR_BGR2RGB))
